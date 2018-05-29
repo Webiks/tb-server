@@ -1,47 +1,56 @@
-var multiparty = require('multiparty');
-var http = require('http');
-var util = require('util');
+const   formidable = require('formidable'),
+        http = require('http'),
+        util = require('util'),
+        fs   = require('fs-extra');
 
 const port = 3000;
 
 http.createServer(function(req, res) {
-    if (req.url === '/upload' && req.method === 'POST') {
-        console.log("new form: req  %s", req);
+    /* Process the form uploads */
+    if (req.url == '/upload' && req.method.toLowerCase() == 'post') {
+        // set the max File Size to 2 GB
+        const opts = {
+            maxFileSize: 2000 * 1024 * 1024,
+            uploadDir: './store/'
+        }
+        const form = new formidable.IncomingForm(opts);
 
-        // parse a file upload
-        let count = 0;
-        const form = new multiparty.Form();
-
-        form.uploadDir = '../store';
-        console.log("new form: upload Dir = " + form.uploadDir);
-
-        // Parse req
         form.parse(req, function(err, fields, files) {
-            console.log("new form: File name = " + files.toString());
-            //console.log("new form: File name = " + files.get);
-
-            Object.keys(fields).forEach(function(name) {
-                console.log('formParse: got field named ' + name);
-            });
-
-            Object.keys(files).forEach(function(name) {
-                console.log('formParse: got file named ' + name);
-                //console.log("formParse: value = " + value);
-                //console.log("formParse: filename = " + filename);
-            });
-
-            console.log('formParse: Upload completed!');
-
             res.writeHead(200, {'content-type': 'text/plain'});
             res.write('received upload:\n\n');
-            res.end('Received ' + count + ' files');
+            res.end(util.inspect({fields: fields, files: files}));
+        });
 
+        form.on('progress', function(bytesReceived, bytesExpected) {
+            var percent_complete = (bytesReceived / bytesExpected) * 100;
+            console.log(percent_complete.toFixed(2));
+        });
+
+        form.on('error', function(err) {
+            console.error(err);
+        });
+
+        form.on('end', function(fields, files) {
+            /* Temporary location of our uploaded file */
+            var temp_path = this.openedFiles[0].path;
+            /* The file name of the uploaded file */
+            var file_name = this.openedFiles[0].name;
+            /* Location where we want to copy the uploaded file */
+            var new_path = form.uploadDir + file_name;
+
+            fs.rename(temp_path, new_path, function(err) {
+                if (err) {
+                    console.error(err);
+                } else {
+                    console.log("success!")
+                }
+            });
         });
 
         return;
     }
 
-    // show a file upload form
+    // Display the file upload form
     res.writeHead(200, {'content-type': 'text/html'});
     res.end(
         '<form action="/upload" enctype="multipart/form-data" method="post">'+
