@@ -1,20 +1,39 @@
-const   formidable = require('formidable'),
-        http = require('http'),
-        util = require('util'),
-        fs   = require('fs-extra');
-
+const express = require('express');
+const router = express.Router();
+const  http = require('http');
+const formidable = require('express-formidable');
+const config = require('../config/configJson');
 const { execSync } = require('child_process');          // for using the cURL command line
-const { port } = require('../config/configJson.json');
 
-http.createServer(function(req, res) {
-    /* Process the form uploads */
+const app = express();
+
+const opts = {
+    encoding: 'utf-8',
+    maxFileSize: config.maxFileSize,
+    uploadDir: './api/uploads/',
+    multiples: true, // req.files to be arrays of files
+    keepExtensions: true
+};
+app.use(formidable(opts));
+
+app.post('/:worldName/rasters', (req, res) => {
+    // req.fields; // contains non-file fields
+    // req.files; // contains files
+    const workspaceName = req.params.worldName;
+    console.log("dirname: " + JSON.stringify(__dirname));
+    console.log("files: " + JSON.stringify(req.files));
+    console.log("req url: " + JSON.stringify(req.url));
+    console.log("req method: " + JSON.stringify(req.method));
+    console.log("options: " + JSON.stringify(opts));
+
+    opts.uploadDir = './api/uploads/rasters';
+    const form = new formidable.IncomingForm(opts);
+    console.log("Form uploadDir: " + form.uploadDir);
+
     if (req.url == '/upload' && req.method.toLowerCase() == 'post') {
-        // set the max File Size to 2 GB
-        const opts = {
-            maxFileSize: 20000 * 1024 * 1024,
-            uploadDir: './store/'
-        }
-        const form = new formidable.IncomingForm(opts);
+        // creating a form instance
+
+
 
         form.parse(req, function(err, fields, files) {
             res.writeHead(200, {'content-type': 'text/plain'});
@@ -22,21 +41,32 @@ http.createServer(function(req, res) {
             res.end(util.inspect({fields: fields, files: files}));
         });
 
+        // define the file Path when the upload is starting
+        /*
+        form.on('fileBegin', function (name, file){
+            file.path = __dir__ + '/uploads/' + file.name;
+            console.log('fileBegin: file path ' + file.path);
+        });*/
+
         // show the upload progress by percent
         form.on('progress', function(bytesReceived, bytesExpected) {
             var percent_complete = (bytesReceived / bytesExpected) * 100;
             console.log(percent_complete.toFixed(2));
         });
 
-        form.on('error', function(err) {
-            console.error(err);
-        });
+        /*
+        form.on('file', function (name, file){
+            console.log('Uploaded ' + file.name);
+        });*/
 
+        // when the upload is finished
         form.on('end', function(fields, files) {
             /* Temporary location of our uploaded file */
-            let temp_path = this.openedFiles[0].path;
+            // let temp_path = this.openedFiles[0].path;
+            let temp_path = req.files.uploadRaster.path;
             /* The file name of the uploaded file */
-            let file_name = this.openedFiles[0].name;
+            // let file_name = this.openedFiles[0].name;
+            let file_name = req.files.uploadRaster.name;
             /* Location where we want to copy the uploaded file */
             let new_path = form.uploadDir + file_name;
 
@@ -49,14 +79,9 @@ http.createServer(function(req, res) {
                 }
             });
 
-            // adding the GeoTiff file to the 'tb' workspace in geoserver using the cURL command line:
-
+            // adding the GeoTiff file to the workspace in geoserver using the cURL command line:
             // 0. create the JSON file with the desire workspace
-            let workspaceName = "tb";
             const importJsonPath = `${__dirname}\\json\\import.json`;
-            /*const warpJsonPath = `${__dirname}\json\warp.json`;
-            const gtxJsonPath = `${__dirname}\json\gtx.json`;
-            const gadJsonPath = `${__dirname}\json\gad.json`;*/
 
             const importObj = {
                 import:{
@@ -98,24 +123,6 @@ http.createServer(function(req, res) {
             const stepTwo = execSync(curl_postToTaskList);
             console.log("step 2 is DONE..." + stepTwo);
 
-            /* H O L D */
-            // 3.  append the transformations to rectify (gdalwarp), retile (gdal_translate) and add overviews (gdaladdo) to it
-            /*
-            const curl_wrapTransform = `curl -u admin:geoserver -XPOST -H "Content-type: application/json" -d
-            @${warpJsonPath} "http://localhost:8080/geoserver/rest/imports/${task}/tasks/0/transforms"`;
-            const curl_gdalTranslate = `curl -u admin:geoserver -XPOST -H "Content-type: application/json" -d 
-            @${gtxJsonPath} "http://localhost:8080/geoserver/rest/imports/${task}/tasks/0/transforms"`;
-            const curl_overView = `curl -u admin:geoserver -XPOST -H "Content-type: application/json" -d 
-            @${gadJsonPath} "http://localhost:8080/geoserver/rest/imports/${task}/tasks/0/transforms"`;
-
-            const stepThree = execSync( curl_wrapTransform);
-            console.log("step 3 is DONE..." + stepThree);
-            const stepFour = execSync(curl_gdalTranslate);
-            console.log("step 4 is DONE..." + stepFour);
-            const stepFive = execSync(curl_overView);
-            console.log("step 5 is DONE..." + stepFive);
-            */
-
             // 4. execute the import
             const curl_execute = `curl -u admin:geoserver -XPOST "http://localhost:8080/geoserver/rest/imports/${task}"`;
 
@@ -132,17 +139,12 @@ http.createServer(function(req, res) {
 
         });
 
+        // catch en error
+        form.on('error', function(err) {
+            console.error(err);
+        });
 
-        return;
     }
-    /*
-    // Display the file upload form
-    res.writeHead(200, {'content-type': 'text/html'});
-    res.end(
-        '<form action="/upload" enctype="multipart/form-data" method="post">'+
-        '<input type="text" name="title"><br>'+
-        '<input type="file" name="upload" multiple="multiple"><br>'+
-        '<input type="submit" value="Upload">'+
-        '</form>'
-    );*/
-}).listen(port, () => console.log(`server running at http://localhost: ${port}`));
+});
+
+module.exports = app;

@@ -1,19 +1,33 @@
-const   formidable = require('formidable'),
-        http = require('http'),
-        util = require('util'),
-        fs   = require('fs-extra');
-
+const express = require('express');
+const formidable = require('express-formidable');
+const config = require('../config/configJson');
 const { execSync } = require('child_process');          // for using the cURL command line
-const { port } = require('../config/configJson.json');
+const  http = require('http');
+const  util = require('util');
+const  fs   = require('fs-extra');
+
+const app = express();
+const opts = {
+    encoding: 'utf-8',
+    maxFileSize: config.maxFileSize,
+    uploadDir: './api/uploads/',
+    multiples: true, // req.files to be arrays of files
+    keepExtensions: true
+};
+app.use(formidable(opts));
 
 http.createServer(function(req, res) {
     /* Process the form uploads */
-    if (req.url == '/upload' && req.method.toLowerCase() == 'post') {
-        // set the max File Size to 2 GB
-        const opts = {
-            maxFileSize: 20000 * 1024 * 1024,
-            uploadDir: './store/'
-        }
+    opts.uploadDir = './api/uploads/rasters';
+    const workspaceName = req.params.worldName;
+    console.log("dirname: " + JSON.stringify(__dirname));
+    console.log("files: " + JSON.stringify(req.files));
+    console.log("req url: " + JSON.stringify(req.url));
+    console.log("req method: " + JSON.stringify(req.method));
+    console.log("options: " + JSON.stringify(opts));
+
+    if (req.url == '/:worldName/rasters' && req.method.toLowerCase() == 'post') {
+
         const form = new formidable.IncomingForm(opts);
 
         form.parse(req, function(err, fields, files) {
@@ -103,11 +117,10 @@ http.createServer(function(req, res) {
             /*
             const curl_wrapTransform = `curl -u admin:geoserver -XPOST -H "Content-type: application/json" -d
             @${warpJsonPath} "http://localhost:8080/geoserver/rest/imports/${task}/tasks/0/transforms"`;
-            const curl_gdalTranslate = `curl -u admin:geoserver -XPOST -H "Content-type: application/json" -d 
+            const curl_gdalTranslate = `curl -u admin:geoserver -XPOST -H "Content-type: application/json" -d
             @${gtxJsonPath} "http://localhost:8080/geoserver/rest/imports/${task}/tasks/0/transforms"`;
-            const curl_overView = `curl -u admin:geoserver -XPOST -H "Content-type: application/json" -d 
+            const curl_overView = `curl -u admin:geoserver -XPOST -H "Content-type: application/json" -d
             @${gadJsonPath} "http://localhost:8080/geoserver/rest/imports/${task}/tasks/0/transforms"`;
-
             const stepThree = execSync( curl_wrapTransform);
             console.log("step 3 is DONE..." + stepThree);
             const stepFour = execSync(curl_gdalTranslate);
@@ -135,7 +148,7 @@ http.createServer(function(req, res) {
 
         return;
     }
-    /*
+
     // Display the file upload form
     res.writeHead(200, {'content-type': 'text/html'});
     res.end(
@@ -144,5 +157,7 @@ http.createServer(function(req, res) {
         '<input type="file" name="upload" multiple="multiple"><br>'+
         '<input type="submit" value="Upload">'+
         '</form>'
-    );*/
-}).listen(port, () => console.log(`server running at http://localhost: ${port}`));
+    );
+});
+    //.listen(port, () => console.log(`server running at http://localhost: ${port}`));
+module.exports = app;
