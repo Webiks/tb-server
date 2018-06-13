@@ -1,10 +1,11 @@
 const express = require('express');
 const router = express.Router();
 const axios = require('axios');
-const { ipAddress, serverPort, geoserverPort, Authorization } = require('../config/config');
+const config = require('../config/configJson');
 
-const urlGeoserverRest = `http://${ipAddress}${geoserverPort}/geoserver/rest/workspaces.json`;
-const urlAppServer = `http://${ipAddress}${serverPort}/api/worlds`;
+const urlGeoserverRest = `http://${config.ipAddress}${config.geoserverPort}/geoserver/rest/workspaces.json`;
+const urlAppServer = `http://${config.ipAddress}${config.serverPort}/api/worlds`;
+const authorization = config.authorization;
 
 // =============
 //  GET Request
@@ -12,7 +13,7 @@ const urlAppServer = `http://${ipAddress}${serverPort}/api/worlds`;
 
 // get all the worlds from geoserver
 router.get('/', (req, res) => {
-    axios.get(urlGeoserverRest, { headers: { Authorization } })
+    axios.get(urlGeoserverRest, { headers: {authorization} })
         .then((response) => {
             res.send(response.data);
             return response.data;

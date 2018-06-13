@@ -2,10 +2,10 @@ const express = require('express');
 const router = express.Router();
 const worlds = require('./worlds');
 const layers = require('./layers');
-const fileUpload = require('./fileUpload');
+const uploadFile = require('./uploadFile');
 
 router.use('/worlds', worlds);
 router.use('/layers', layers);
-router.use('/fileUpload', fileUpload);
+router.use('/upload', uploadFile);
 
 module.exports = router;

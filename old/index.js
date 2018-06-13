@@ -4,7 +4,7 @@ const   formidable = require('formidable'),
         fs   = require('fs-extra');
 
 const { execSync } = require('child_process');          // for using the cURL command line
-const { port } = require('../config/config.json');
+const { port } = require('../config/configJson.json');
 
 http.createServer(function(req, res) {
     /* Process the form uploads */
