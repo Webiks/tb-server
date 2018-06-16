@@ -2,10 +2,8 @@ const express = require('express');
 const config = require('../config/configJson');
 const fs = require('fs-extra');
 const { execSync } = require('child_process');          // for using the cURL command line
-const zip = require('express-easy-zip');
 
 const app = express();
-app.use(zip());
 
 // setting the cURL commands line (name and password, headers, request url)
 const baseCurl = 'curl -u admin:geoserver';
@@ -69,13 +67,13 @@ module.exports = function() {
         };
     };
 
-    this.createImportObjectWithData = (workspaceName, filename) => {
+    this.createImportObjectWithData = (workspaceName, filePath) => {
         const importObject = this.createImportObject(workspaceName);
         const data = {
             type: 'file',
-            file: filename
+            file: filePath
         };
-        console.log("import object with data: " + JSON.stringify({ ...importObject, data}));
+        console.log("import object with data");
         return { ...importObject, data};
     };
 
@@ -121,32 +119,20 @@ module.exports = function() {
         console.log("DONE!");
     };
 
-    this.fileToZip = (filename, uploadDir) => {
+    this.fileToZip = (filename, uploadPath) => {
         // define the layers parameters for the zip operation
         return [
             {
+                content: '',
                 name: filename,
-                mode: '0755',
+                mode: 0o755,
+                comment: '',
                 date: new Date(),
-                type: 'file'
-            },
+                type: 'file' },
             {
-                path: path.join(dirname, `/../public/uploads/${filename}`),
+                path: uploadPath,
                 name: 'uploads'
             }
         ];
     };
-    // { path: path.join(__dirname, './file'), name: 'any/path/to/file' }, //can be a file
-    // { path: path.join(__dirname, './folder/'), name: 'folder-name' }
-
-    this.zipFiles = (res, filesToZip, zipFileName) => {
-        res.zip({
-            files: filesToZip,
-            filename: zipFileName
-            })
-            .then( success => console.log("succeed to zip the files"))
-            .catch(function(err){
-                console.log(err);	//if zip failed
-            });
-    }
 };
