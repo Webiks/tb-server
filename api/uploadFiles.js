@@ -9,8 +9,6 @@ const zip = require('express-easy-zip');
 // const archiver = require('archiver');
 require('./uploadFileMethods')();
 
-const app = express();
-
 const uploadDir = '/public/uploads/';
 const dirPath = __dirname.replace(/\\/g, "/");
 const uploadPath = `${dirPath}${uploadDir}`;
@@ -21,10 +19,10 @@ console.log("jsondPath: " + jsonPath);
 
 const opts = setOptions(uploadPath);
 console.log("opts: " + JSON.stringify(opts));
-app.use(formidable(opts));
-app.use(zip());
+router.use(formidable(opts));
+router.use(zip());
 
-app.post('/:worldName', (req, res) => {
+router.post('/:worldName', (req, res) => {
     const workspaceName = req.params.worldName;
     // const fileType = req.params.fileType;
     const reqFiles = req.files.uploads;
@@ -127,7 +125,7 @@ app.post('/:worldName', (req, res) => {
 
 });
 
-module.exports = app;
+module.exports = router;
 
 /*
     // create a file to stream archive data to.

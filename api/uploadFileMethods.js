@@ -3,13 +3,11 @@ const config = require('../config/configJson');
 const fs = require('fs-extra');
 const { execSync } = require('child_process');          // for using the cURL command line
 
-const app = express();
-
 // setting the cURL commands line (name and password, headers, request url)
-const baseCurl = 'curl -u admin:geoserver';
-const curlContentTypeHeader = `-H "Content-type: application/json"`;
-const curlAcceptHeader = `-H  "accept: application/json"`;
-const reqCurl = `"http://${config.ipAddress}${config.geoserverPort}/geoserver/rest/imports`;
+const baseCurl = config.baseCurl;
+const curlContentTypeHeader = '-H "Content-type: application/json"';
+const curlAcceptHeader = '-H  "accept: application/json"';
+const reqCurl = config.curlRestImports;
 
 module.exports = function() {
     this.setOptions = (uploadDir) => {
