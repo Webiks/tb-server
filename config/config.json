@@ -1,7 +1,0 @@
-{
-  "ipAddress": "localhost:",
-  "appPort": 3000,
-  "serverPort": 4000,
-  "geoserverPort": 8080,
-  "Authorization": "Basic YWRtaW46Z2Vvc2VydmVy"
-}
