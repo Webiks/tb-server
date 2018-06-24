@@ -13,9 +13,6 @@ const uploadDir = '/public/uploads/';
 const dirPath = __dirname.replace(/\\/g, "/");
 const uploadPath = `${dirPath}${uploadDir}`;
 const jsonPath = `${dirPath}/public/json/`;
-console.log("dirPath: " + dirPath);
-console.log("uploadPath: " + uploadPath);
-console.log("jsondPath: " + jsonPath);
 
 const opts = setOptions(uploadPath);
 console.log("opts: " + JSON.stringify(opts));

@@ -7,7 +7,7 @@ const { execSync } = require('child_process');          // for using the cURL co
 const baseCurl = config.baseCurl;
 const curlContentTypeHeader = '-H "Content-type: application/json"';
 const curlAcceptHeader = '-H  "accept: application/json"';
-const reqCurl = config.curlRestImports;
+const reqCurl = config.baseUrlGeoserverImports;
 
 module.exports = function() {
     this.setOptions = (uploadDir) => {
