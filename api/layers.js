@@ -1,146 +1,150 @@
 const express = require('express');
 const router = express.Router();
 const axios = require('axios');
-const { ipAddress, serverPort, geoserverPort, Authorization } = require('../config/config');
+const config = require('../config/configJson');
 
-const urlGeoserverRest = `http://${ipAddress}${geoserverPort}/geoserver/rest`;
-const urlAppServer = `http://${ipAddress}${serverPort}/api/layers`;
+const authorization = config.authorization;
 
 // ==============
 //  GET Requests
 // ==============
 // get all layers of the world
 router.get('/:worldName', (req, res) => {
-    axios.get(`${urlGeoserverRest}/workspaces/${req.params.worldName}/layers.json`, { headers: { Authorization } })
-        .then((response) => {
-            res.send(response.data);
-            return response.data;
+    const urlGetLayers = `${config.baseUrlGeoserverRest}/workspaces/${req.params.worldName}/layers.json`;
+    console.log("TB SERVER: start getLayers url = " + urlGetLayers);
+    axios.get(urlGetLayers, { headers: { authorization } })
+        .then((response) => res.send(response.data))
+        .catch((error) => res.send(`getLayers ERROR! ${urlGetLayers}: ${error.message}`));
+
+});
+
+// get the layer type & resource info ("layer" field - type ILayerDetails)
+router.get('/layer/:worldName/:layerName', (req, res) => {
+    const urlGetLayer = `${config.baseUrlGeoserverRest}/workspaces/${req.params.worldName}/layers/${req.params.layerName}.json`;
+    console.log("TB SERVER: start getLayerInfo url = " + urlGetLayer);
+    axios.get(urlGetLayer, { headers: { authorization } })
+        .then((response) => res.send(response.data))
+        .catch((error) => res.send(`getLayerInfo ERROR! ${urlGetLayer}: ${error.message}`));
+});
+
+// get layer's details ("data" field - type ILayerDetails)
+// using the resource href that we got from the "layer's info" request
+router.get('/details/:worldName/:layerName', (req, res) => {
+    // get the resource URL
+    axios.get(`${config.baseUrlApiLayers}/layer/${req.params.worldName}/${req.params.layerName}`)
+        .then(response => {
+            // get the resource URL
+            return axios.get(response.data.layer.resource.href, { headers: { authorization } })
         })
-        .catch((error) => {
-            console.log("error!", error);
-            res.send('error');
-        });
+        .then((response) => res.send(response.data))
+        .catch((error) => res.send(`getLayerDetails ERROR!: ${error.message}`));
 });
 
-// get layer's more data (filed "layer" - type ILayer)
-router.get('/:worldName/:layerName', (req, res) => {
-    axios.get(`${urlGeoserverRest}/workspaces/${req.params.worldName}/layers/${req.params.layerName}.json`,
-        { headers: { Authorization } })
-        .then((response) => {
-            res.send(response.data);
-            return response.data;
-        })
-        .catch((error) => {
-            console.log("error!", error);
-            res.send('error');
-        });
+// get the layer's store data ("store" field - type ILayerDetails)
+router.get('/store/:worldName/:storeName/:layerType', (req, res) => {
+    console.log("TB SERVER: STORE NAME = " + req.params.storeName);
+    let storeType = (getTypeData(req.params.layerType)).storeType;
+    const urlGetStore = `${config.baseUrlGeoserverRest}/workspaces/${req.params.worldName}/${storeType}/${req.params.storeName}.json`;
+    console.log("TB SERVER: start getStoreData url = " + urlGetStore);
+    axios.get(urlGetStore, { headers: { authorization } })
+        .then((response) => res.send(response.data))
+        .catch((error) => res.send(`getStoreData ERROR! ${urlGetStore}: ${error.message}`));
 });
 
-// get layer's details (field "data" - type ILayerDetails)
-// using the resource href that we got from the "layer's mor data" request
-router.get('/:worldName/:layerName/details', (req, res) => {
-    axios.get(`${urlAppServer}/${req.params.worldName}/${req.params.layerName}`)
-         .then(res => axios.get(res.data.layer.resource.href, { headers: { Authorization } }))
-         .then((response) => {
-             res.send(response.data);
-             return response.data;
-         })
-         .catch((error) => {
-             console.log("error!", error);
-             res.send('error');
-         });
-
+// get Capabilities XML file - WMTS Request for display the selected layer
+router.get('/wmts/:worldName/:layerName', (req, res) => {
+    const capabilitiesUrl = `${config.baseUrlGeoserver}/${req.params.worldName}/${req.params.layerName}/${config.wmtsServiceUrl}`;
+    axios.get(capabilitiesUrl, { headers: { authorization } })
+        .then((response) => res.send(response.data))
+        .catch((error) => res.send(`getCapabilities ERROR! ${capabilitiesUrl}: ${error.message}`));
 });
+
 // ===============
 // DELETE Requests
 // ===============
-// router.delete('/:worldName/:layerName', (req, res) => {
+// delete layer from the geoserver layers's list
 router.delete('/:layerId', (req, res) => {
-    const layerId = (req.params.layerId).split(':');
-    let worldName = layerId[0];
-    let layerName = layerId[1];
-
-    axios.get(`http://localhost:${port}/api/layers/${worldName}/${layerName}`)
-        .then( res => {
-            console.log("response: " + JSON.stringify(res.data));
-            axios.delete(`http://localhost:8080/geoserver/rest/layers/${req.params.layerId}?recurse=true`,
-                { headers: { Authorization } })
-                .then( success => {
-                    console.log("delete LayerHref: " + res.data.layer.resource.href);
-                    axios.delete(`${res.data.layer.resource.href}?recurse=true`, { headers: { Authorization } })
-                        .then((response) => {
-                            console.log("delete Layer Details: " + JSON.stringify(response.data));
-                            res.send(response.data);
-                            return response.data;
-                        })
-                        .catch((error) => {
-                            console.log("error!", error.response);
-                            res.send('error');
-                        });
-                })
-                .catch((error) => {
-                    console.log("error!", error);
-                    res.send('error');
-                });
+    console.log("TB SERVER: DELETE LAYER = " + req.params.layerId);
+    axios.delete(`${config.baseUrlGeoserverRest}/layers/${req.params.layerId}.json?recurse=true`,
+        { headers: { authorization } })
+        .then( response => {
+            console.log("success delete layer: " + response);
+            res.send(response);
         })
+        .catch((error) => res.send(`deleteLayer ERROR!: ${error.message}`));
 });
 
-router.delete('/:layerId/raster', (req, res) => {
-    const layerId = (req.params.layerId).split(':');
-    let worldName = layerId[0];
-    let layerName = layerId[1];
-    // 1. delete the layer
-    axios.delete(`http://localhost:8080/geoserver/rest/workspaces/${worldName}/coverages/${layerName}.json?recurse=true`,
-        { headers: { Authorization } })
-        .then( res => {
-            console.log("delete Layer: " + res.data);
-            // 2. delete the store
-            axios.delete(`http://localhost:8080/geoserver/rest/layers/${req.params.layerId}.json?recurse=true`,
-                { headers: { Authorization } })
-                .then((response) => {
-                    console.log("delete store: " + JSON.stringify(response.data));
-                    res.send(response.data);
-                    return response.data;
+// delete layer from geoserver store - using the resource URL
+router.delete('/:worldName/:layerName', (req, res) => {
+    // get the resource URL
+    axios.get(`${config.baseUrlApiLayers}/layer/${req.params.worldName}/${req.params.layerName}`)
+        .then(response => {
+            console.log("TB SERVER: DELETE LAYER from STORE = " + response.data.layer.resource.href);
+            // delete the layer from the store
+            axios.delete(`${response.data.layer.resource.href}?recurse=true`, { headers: { authorization } })
+                .then( response => {
+                    console.log("success delete layer from Store: " + response);
+                    res.send(response);
                 })
-                .catch((error) => {
-                    console.log("error!", error);
-                    res.send('error');
-                });
+                .catch((error) => res.send(`deleteLayerFromStore ERROR!: ${error.message}`));
         })
-        .catch((error) => {
-            console.log("error!", error);
-            res.send('error');
-        });
-
+        .catch((error) => res.send(`deleteLayer: getUrl ERROR!: ${error.message}`));
 });
 
-router.delete('/:layerId/vector', (req, res) => {
-    const layerId = (req.params.layerId).split(':');
-    let worldName = layerId[0];
-    let layerName = layerId[1];
-    // 1. delete the layer
-    axios.delete(`http://localhost:8080/geoserver/rest/layers/${req.params.layerId}.json?recurse=true`,
-                { headers: { Authorization } })
-        .then( res => {
-            console.log("delete Layer: " + res.data);
-            // 2. delete the store
-            axios.delete(`http://localhost:8080/geoserver/rest/workspaces/${worldName}/datastores/${layerName}.json?recurse=true`,
-                { headers: { Authorization } })
-                .then((response) => {
-                    console.log("delete store: " + JSON.stringify(response.data));
-                    res.send(response.data);
-                    return response.data;
-                })
-                .catch((error) => {
-                    console.log("error!", error);
-                    res.send('error');
-                });
+router.delete('/store/:worldName/:storeName/:storeType', (req, res) => {
+    let storeType;
+    let layerDetailsType;
+    switch (req.params.storeType) {
+        case ('RASTER'):
+            storeType = 'coveragestores';
+            layerDetailsType = 'coverages';
+            break;
+        case ('VECTOR'):
+            storeType = 'datastores';
+            layerDetailsType = 'featuretypes';
+            break;
+    }
+    const storeUrl =
+        `${config.baseUrlGeoserverRest}/workspaces/${req.params.worldName}/${storeType}/${req.params.storeName}.json?recurse=true`
+    console.log("TB SERVER: DELETE STORE = " + storeUrl);
+    axios.delete(storeUrl, { headers: { authorization } })
+        .then( response => {
+            console.log("success delete store: " + JSON.stringify(response));
+            res.send(response);
+        })
+        .catch((error) => res.send(`deleteStore ERROR!: ${error.message}`));
+});
+
+// ========================================  F U N C T I O N S ===========================================
+// get the layer info: type + the url for the layer details data
+function getResourceUrl(worldName, layerName){
+    const layerUrl = `${config.baseUrlGeoserverRest}/workspaces/${worldName}/layers/${layerName}.json`;
+    console.log("TB SERVER: start getResourceUrl url = " + layerUrl);
+    axios.get(layerUrl, { headers: { authorization } })
+        .then((response) => {
+            console.error(`getResourceUrl response:`, response.data);
+            return response.data;
         })
         .catch((error) => {
-            console.log("error!", error);
-            res.send('error');
+            console.error(`getResourceUrl ERROR! ${layerUrl}`, error);
+            return error;
         });
-});
+}
+
+function getTypeData(layerType){
+    const typeData = {};
+    switch (layerType) {
+        case ('RASTER'):
+            typeData.storeType = 'coveragestores';
+            typeData.layerDetailsType = 'coverages';
+            break;
+        case ('VECTOR'):
+            typeData.storeType = 'datastores';
+            typeData.layerDetailsType = 'featuretypes';
+            break;
+    }
+    return typeData;
+}
 
 module.exports = router;
 

@@ -1,10 +1,10 @@
 const express = require('express');
 const router = express.Router();
 const axios = require('axios');
-const { ipAddress, serverPort, geoserverPort, Authorization } = require('../config/config');
+const config = require('../config/configJson');
 
-const urlGeoserverRest = `http://${ipAddress}${geoserverPort}/geoserver/rest/workspaces.json`;
-const urlAppServer = `http://${ipAddress}${serverPort}/api/worlds`;
+const urlGetWorkspaces = `${config.baseUrlGeoserverRest}/workspaces`;
+const authorization = config.authorization;
 
 // =============
 //  GET Request
@@ -12,7 +12,8 @@ const urlAppServer = `http://${ipAddress}${serverPort}/api/worlds`;
 
 // get all the worlds from geoserver
 router.get('/', (req, res) => {
-    axios.get(urlGeoserverRest, { headers: { Authorization } })
+    console.log("TB SERVER: start getWorlds url = " + urlGetWorkspaces);
+    axios.get(`${urlGetWorkspaces}.json`, { headers: {authorization} })
         .then((response) => {
             res.send(response.data);
             return response.data;
@@ -20,6 +21,18 @@ router.get('/', (req, res) => {
         .catch((error) => {
             console.log("error!", error.response);
             res.send('error');
+        });
+});
+
+// get all the worlds from geoserver
+router.get('/:worldName', (req, res) => {
+    axios.get(`${urlGetWorkspaces}/${req.params.worldName}.json`, { headers: {authorization} })
+        .then((response) => {
+            res.send(response.data);
+        })
+        .catch((error) => {
+            console.log("error!", error.response);
+            res.status(404).send(`world ${req.params.worldName} not found`);
         });
 });
 
