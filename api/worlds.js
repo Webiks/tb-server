@@ -19,20 +19,20 @@ router.get('/', (req, res) => {
             return response.data;
         })
         .catch((error) => {
-            console.log("error!", error.response);
-            res.send('error');
+            console.error("error!", error.response);
+            res.status(404).send(`there are no worlds!`);
         });
 });
 
-// get all the worlds from geoserver
+// get world from geoserver
 router.get('/:worldName', (req, res) => {
     axios.get(`${urlGetWorkspaces}/${req.params.worldName}.json`, { headers: {authorization} })
         .then((response) => {
             res.send(response.data);
         })
         .catch((error) => {
-            console.log("error!", error.response);
-            res.status(404).send(`world ${req.params.worldName} not found`);
+            console.error("error!", error.response);
+            res.status(404).send(`world ${req.params.worldName} can't be found!`);
         });
 });
 

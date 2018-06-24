@@ -3,7 +3,7 @@
   "appPort": 3000,
   "serverPort": 4000,
   "geoserverPort": 8080,
-  "baseUrlApiLayers": "http://localhost:4000/api/layers",
+  "baseUrlAppGetLayer": "http://localhost:4000/api/layers/layer",
   "baseUrlGeoserver": "http://localhost:8080/geoserver",
   "baseUrlGeoserverRest": "http://localhost:8080/geoserver/rest",
   "baseUrlGeoserverImports": "http://localhost:8080/geoserver/rest/imports",
