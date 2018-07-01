@@ -6,6 +6,7 @@
   "baseUrlAppGetLayer": "http://localhost:4000/api/layers/layer",
   "baseUrlGeoserver": "http://localhost:8080/geoserver",
   "baseUrlGeoserverRest": "http://localhost:8080/geoserver/rest",
+  "baseUrlGeoserverWorkspaces": "http://localhost:8080/geoserver/rest/workspaces",
   "baseUrlGeoserverImports": "http://localhost:8080/geoserver/rest/imports",
   "wmtsServiceUrl": "gwc/service/wmts?SERVICE=wmts&REQUEST=getcapabilities&VERSION=1%2E0%2E0",
   "baseCurl": "curl -u admin:geoserver",

@@ -7,7 +7,8 @@ const { execSync } = require('child_process');          // for using the cURL co
 const path = require('path');
 const zip = require('express-easy-zip');
 // const archiver = require('archiver');
-require('./uploadFileMethods')();
+require('./fileMethods')();
+require('./curlMethods')();
 
 const uploadDir = '/public/uploads/';
 const dirPath = __dirname.replace(/\\/g, "/");

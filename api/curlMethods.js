@@ -1,56 +1,22 @@
 const express = require('express');
 const config = require('../config/configJson');
-const fs = require('fs-extra');
 const { execSync } = require('child_process');          // for using the cURL command line
 
 // setting the cURL commands line (name and password, headers, request url)
 const baseCurl = config.baseCurl;
 const curlContentTypeHeader = '-H "Content-type: application/json"';
 const curlAcceptHeader = '-H  "accept: application/json"';
-const reqCurl = config.baseUrlGeoserverImports;
+const reqImportCurl = config.baseUrlGeoserverImports;
+const reqWorkspaceCurl = config.baseUrlGeoserverWorkspaces;
 
 module.exports = function() {
-    this.setOptions = (uploadDir) => {
+
+    this.createWorkspaceObject = (workspaceName) => {
         return {
-            encoding: 'utf-8',
-            maxFileSize: config.maxFileSize,
-            uploadDir: uploadDir,
-            multiples: true, // req.files to be arrays of files
-            keepExtensions: true
-        };
-    };
-
-    this.findFileType = (reqType) => {
-        const splitReqType = (reqType).split('/');
-        if (splitReqType[1] === 'tiff' || splitReqType[1] === 'tif' ){
-            return 'raster';
-        }
-        else{
-            return 'vector';
-        }
-    };
-
-    this.renameFile = (temp_path, new_path) => {
-        fs.rename(temp_path, new_path, function (err) {
-            if (err) {
-                console.error(err);
-            } else {
-                console.log(`success to save the '${new_path}'!`);
+            workspace: {
+                name: workspaceName
             }
-        });
-    };
-
-    this.removeFile = (filePath) => {
-        fs.remove(filePath, err => {
-            if (err) return console.error(err);
-            console.log(`the file '${filePath}' was removed!'`);
-        });
-    };
-
-    this.writeFile = (dirpath, file) => {
-        fs.writeFile(dirpath, JSON.stringify(file), 'utf8', err => {
-            if (err) return console.error(err);
-        });
+        };
     };
 
     this.createImportObject = (workspaceName) => {
@@ -75,11 +41,28 @@ module.exports = function() {
         return { ...importObject, data};
     };
 
+    // CREATE a new workspace in geoserver
+    this.createNewWorkspaceInGeoserver = (workspaceJsonFile) => {
+        console.log("Creating a new Workspace using the cURL...");
+        const curl_createWorkspace = `${baseCurl} -XPOST ${curlContentTypeHeader} -d "${workspaceJsonFile}" ${reqWorkspaceCurl}`;
+        console.log("succeed to create a new workspace in geoserver..." + curl_createWorkspace);
+        return execSync(curl_createWorkspace);
+    };
+
+    // DELETE a workspace from geoserver
+    this.deleteWorkspaceFromGeoserver = (workspaceName) => {
+        console.log(`Deleting ${workspaceName} Workspace using the cURL...`);
+        const curl_deleteWorkspace = `${baseCurl} -XDELETE ${reqWorkspaceCurl}/${workspaceName}?recurse=true ${curlAcceptHeader} ${curlContentTypeHeader}`;
+        console.log("succeed to delete workspace " + curl_deleteWorkspace + " from geoserver");
+        return execSync(curl_deleteWorkspace);
+    };
+
+    // upload new layer to geoserver by the importer extension
     this.uploadFileToGeoserverStepOne = (importJsonPath) => {
-        console.log("starting the cURL...");
+        console.log("Upload File using the cURL...");
         // 1. create a empty import with no store as the target
-        const curl_createEmptyImport = `${baseCurl} -XPOST ${curlContentTypeHeader} -d @${importJsonPath} ${reqCurl}"`;
-        console.log("step 1 is DONE...");
+        const curl_createEmptyImport = `${baseCurl} -XPOST ${curlContentTypeHeader} -d @${importJsonPath} ${reqImportCurl}`;
+        console.log("step 1 is DONE..." + curlContentTypeHeader);
         return execSync(curl_createEmptyImport);
     };
 
@@ -96,14 +79,14 @@ module.exports = function() {
         const curlFileData = `-F name=${filename} -F filedata=@${filepath}`;
         console.log("sendToTask: curlFileData: " + curlFileData);
 
-        const curl_postToTaskList = `${baseCurl} ${curlFileData} ${reqCurl}/${importId}/tasks"`;
+        const curl_postToTaskList = `${baseCurl} ${curlFileData} ${reqImportCurl}/${importId}/tasks`;
         const curl = execSync(curl_postToTaskList);
         console.log("sent to the Tasks Queue..." + curl);
     };
 
     this.executeFileToGeoserver = (importId) => {
         // execute the import task
-        const curl_execute = `${baseCurl} -XPOST ${reqCurl}/${importId}"`;
+        const curl_execute = `${baseCurl} -XPOST ${reqImportCurl}/${importId}`;
         const execute = execSync(curl_execute);
         console.log("The execute is DONE..." + execute);
         console.log("DONE!");
@@ -111,26 +94,10 @@ module.exports = function() {
 
     this.deleteUncompleteImports = () => {
         // delete the task from the importer queue
-        const curl_deletsTasks = `${baseCurl} -XDELETE ${curlAcceptHeader} ${curlContentTypeHeader} ${reqCurl}"`;
+        const curl_deletsTasks = `${baseCurl} -XDELETE ${curlAcceptHeader} ${curlContentTypeHeader} ${reqImportCurl}`;
         const deleteTasks = execSync(curl_deletsTasks);
         console.log("Delete task from the Importer..." + deleteTasks);
         console.log("DONE!");
     };
 
-    this.fileToZip = (filename, uploadPath) => {
-        // define the layers parameters for the zip operation
-        return [
-            {
-                content: '',
-                name: filename,
-                mode: 0o755,
-                comment: '',
-                date: new Date(),
-                type: 'file' },
-            {
-                path: uploadPath,
-                name: 'uploads'
-            }
-        ];
-    };
 };
