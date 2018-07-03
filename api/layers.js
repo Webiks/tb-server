@@ -3,14 +3,15 @@ const router = express.Router();
 const axios = require('axios');
 const config = require('../config/configJson');
 
-const authorization = config.authorization;
+const baseRestUrlGeoserver = config.baseUrlGeoserver.restUrl;
+const authorization = config.headers.Authorization;
 
 // ==============
 //  GET Requests
 // ==============
 // get all layers of the world
 router.get('/:worldName', (req, res) => {
-    const urlGetLayers = `${config.baseUrlGeoserverRest}/workspaces/${req.params.worldName}/layers.json`;
+    const urlGetLayers = `${baseRestUrlGeoserver}/workspaces/${req.params.worldName}/layers.json`;
     console.log("TB SERVER: start getLayers url = " + urlGetLayers);
     axios.get(urlGetLayers, { headers: { authorization } })
         .then( response => res.send(response.data))
@@ -23,7 +24,7 @@ router.get('/:worldName', (req, res) => {
 
 // get the layer type & resource info ("layer" field - type ILayerDetails)
 router.get('/layer/:worldName/:layerName', (req, res) => {
-    const urlGetLayer = `${config.baseUrlGeoserverRest}/workspaces/${req.params.worldName}/layers/${req.params.layerName}.json`;
+    const urlGetLayer = `${baseRestUrlGeoserver}/workspaces/${req.params.worldName}/layers/${req.params.layerName}.json`;
     console.log("TB SERVER: start getLayerInfo url = " + urlGetLayer);
     axios.get(urlGetLayer, { headers: { authorization } })
         .then( response => res.send(response.data))
@@ -53,7 +54,7 @@ router.get('/details/:worldName/:layerName', (req, res) => {
 // get the layer's store data ("store" field - type ILayerDetails)
 router.get('/store/:worldName/:storeName/:storeType', (req, res) => {
     let storeType = (getTypeData(req.params.storeType)).storeType;
-    const urlGetStore = `${config.baseUrlGeoserverRest}/workspaces/${req.params.worldName}/${storeType}/${req.params.storeName}.json`;
+    const urlGetStore = `${baseRestUrlGeoserver}/workspaces/${req.params.worldName}/${storeType}/${req.params.storeName}.json`;
     console.log("TB SERVER: start getStoreData url = " + urlGetStore);
     axios.get(urlGetStore, { headers: { authorization } })
         .then( response => res.send(response.data))
@@ -65,7 +66,7 @@ router.get('/store/:worldName/:storeName/:storeType', (req, res) => {
 
 // get Capabilities XML file - WMTS Request for display the selected layer
 router.get('/wmts/:worldName/:layerName', (req, res) => {
-    const capabilitiesUrl = `${config.baseUrlGeoserver}/${req.params.worldName}/${req.params.layerName}/${config.wmtsServiceUrl}`;
+    const capabilitiesUrl = `${config.baseUrlGeoserver.baseUrl}/${req.params.worldName}/${req.params.layerName}/${config.wmtsServiceUrl}`;
     console.log("TB SERVER: start getCapabilities url = " + capabilitiesUrl);
     axios.get(capabilitiesUrl, { headers: { authorization } })
         .then( response => res.send(response.data))
@@ -81,7 +82,7 @@ router.get('/wmts/:worldName/:layerName', (req, res) => {
 // delete layer from the geoserver layers's list
 router.delete('/:layerId', (req, res) => {
     console.log("TB SERVER: DELETE LAYER = " + req.params.layerId);
-    axios.delete(`${config.baseUrlGeoserverRest}/layers/${req.params.layerId}.json?recurse=true`,
+    axios.delete(`${baseRestUrlGeoserver}/layers/${req.params.layerId}.json?recurse=true`,
         { headers: { authorization } })
         .then( response => {
             console.log(`success delete layer ${req.params.layerId}`);
@@ -114,7 +115,7 @@ router.delete('/:worldName/:layerName', (req, res) => {
 router.delete('/store/:worldName/:storeName/:storeType', (req, res) => {
     const storeType = (getTypeData(req.params.storeType)).storeType;
     const storeUrl =
-        `${config.baseUrlGeoserverRest}/workspaces/${req.params.worldName}/${storeType}/${req.params.storeName}.json?recurse=true`;
+        `${baseRestUrlGeoserver}/workspaces/${req.params.worldName}/${storeType}/${req.params.storeName}.json?recurse=true`;
     console.log("TB SERVER: DELETE STORE = " + storeUrl);
     axios.delete(storeUrl, { headers: { authorization } })
         .then( response => {

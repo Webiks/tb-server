@@ -7,7 +7,8 @@ const { execSync } = require('child_process');          // for using the cURL co
 const path = require('path');
 const zip = require('express-easy-zip');
 // const archiver = require('archiver');
-require('./uploadFileMethods')();
+require('./fileMethods')();
+require('./curlMethods')();
 
 const uploadDir = '/public/uploads/';
 const dirPath = __dirname.replace(/\\/g, "/");
@@ -15,7 +16,6 @@ const uploadPath = `${dirPath}${uploadDir}`;
 const jsonPath = `${dirPath}/public/json/`;
 
 const opts = setOptions(uploadPath);
-console.log("opts: " + JSON.stringify(opts));
 router.use(formidable(opts));
 router.use(zip());
 
