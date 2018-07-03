@@ -16,7 +16,6 @@ const uploadPath = `${dirPath}${uploadDir}`;
 const jsonPath = `${dirPath}/public/json/`;
 
 const opts = setOptions(uploadPath);
-console.log("opts: " + JSON.stringify(opts));
 router.use(formidable(opts));
 router.use(zip());
 

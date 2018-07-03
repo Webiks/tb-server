@@ -41,12 +41,23 @@ module.exports = function() {
         return { ...importObject, data};
     };
 
+    //============
+    //  WORKSPACE
+    //============
     // CREATE a new workspace in geoserver
     this.createNewWorkspaceInGeoserver = (workspaceJsonFile) => {
         console.log("Creating a new Workspace using the cURL...");
         const curl_createWorkspace = `${baseCurl} -XPOST ${curlContentTypeHeader} -d "${workspaceJsonFile}" ${reqWorkspaceCurl}`;
         console.log("succeed to create a new workspace in geoserver..." + curl_createWorkspace);
         return execSync(curl_createWorkspace);
+    };
+
+    // UPDATE the workspace's name in geoserver
+    this.updateWorkspaceInGeoserver = (workspaceName, newName) => {
+        console.log("Updateing Workspace's name using the cURL...");
+        const curl_updateWorkspace = `${baseCurl} -XPUT ${reqWorkspaceCurl}/${workspaceName} ${curlAcceptHeader} ${curlContentTypeHeader} -d "{ \"name\": \"${newName}\" }"`;
+        console.log(`succeed to update ${workspaceName} workspace to ${newName} ... ${curl_updateWorkspace}`);
+        return execSync(curl_updateWorkspace);
     };
 
     // DELETE a workspace from geoserver
@@ -57,6 +68,9 @@ module.exports = function() {
         return execSync(curl_deleteWorkspace);
     };
 
+    //============
+    //   LAYERS
+    //============
     // upload new layer to geoserver by the importer extension
     this.uploadFileToGeoserverStepOne = (importJsonPath) => {
         console.log("Upload File using the cURL...");
