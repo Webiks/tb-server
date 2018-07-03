@@ -10,6 +10,10 @@
   "wmtsServiceUrl": "gwc/service/wmts?SERVICE=wmts&REQUEST=getcapabilities&VERSION=1%2E0%2E0",
   "baseCurl": "curl -u admin:geoserver",
   "authorization": "Basic YWRtaW46Z2Vvc2VydmVy",
-  "maxFileSize" : 20000000000
+  "maxFileSize" : 20000000000,
+  "login": {
+    "username": "a",
+    "password": "b"
+  }
 }
 
