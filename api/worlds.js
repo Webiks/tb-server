@@ -1,12 +1,9 @@
 const express = require('express');
 const router = express.Router();
 const axios = require('axios');
-const bodyParser = require('body-parser');
 const config = require('../config/configJson');
 const { execSync } = require('child_process');          // for using the cURL command line
 require('./curlMethods')();
-
-router.use(bodyParser.json());
 
 const urlGetWorkspaces = `${config.baseUrlGeoserver.restUrl}/workspaces`;
 const authorization = config.headers.Authorization;
