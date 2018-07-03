@@ -7,9 +7,16 @@ router.post('/checkAuth', checkAuth, (req, res) => {
     res.send('o.k');
 });
 
+function isEqual(str1, srt2) {
+  return str1.trim().toLowerCase() === srt2.trim().toLowerCase();
+}
+
 router.post('/login', (req, res) => {
-  if (req.body.username.trim().toLowerCase() === config.login.username && req.body.password.trim().toLowerCase() === config.login.password) {
-    req.session.authenticated = true;
+  const correctUsername = isEqual(req.body.username, process.env[config.login.usernameKey]);
+  const correctPassword = isEqual(req.body.password, process.env[config.login.passwordKey]);
+  const isAuthenticated = correctUsername && correctPassword;
+  req.session.authenticated = isAuthenticated;
+  if (isAuthenticated) {
     res.send('o.k');
   } else {
     res.status(401).send('unAuthorized')

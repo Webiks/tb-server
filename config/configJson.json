@@ -12,8 +12,8 @@
   "authorization": "Basic YWRtaW46Z2Vvc2VydmVy",
   "maxFileSize" : 20000000000,
   "login": {
-    "username": "a",
-    "password": "b"
+    "usernameKey": "TB_USERNAME",
+    "passwordKey": "TB_PASSWORD"
   }
 }
 
